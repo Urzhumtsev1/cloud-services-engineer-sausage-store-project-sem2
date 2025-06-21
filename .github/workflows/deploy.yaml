@@ -70,7 +70,14 @@ jobs:
       needs: build_and_push_to_docker_hub
 
       steps:
-      #### Опишите необходимые шаги
+        - name: Check out the repo
+          # Получение исходного кода из репозитория:
+          uses: actions/checkout@v3
+
+        - name: Install Helm
+          uses: azure/setup-helm@v1
+          with:
+            version: v3.4.0
 
   # Деплоим приложения в кластер Kubernetes с помощью helm-чарт
   deploy_helm_chart_to_kubernetes:
@@ -79,4 +86,7 @@ jobs:
       needs: add_helm_chart_to_nexus
 
       steps:
-      #### Опишите необходимые шаги
+        - name: Install Helm
+          uses: azure/setup-helm@v1
+          with:
+            version: v3.4.0
