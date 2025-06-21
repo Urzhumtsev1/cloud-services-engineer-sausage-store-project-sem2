@@ -12,6 +12,7 @@ env:
   SAUSAGE_STORE_NAMESPACE: ${{ secrets.KUBE_NAMESPACE }}
   KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
   VAULT_TOKEN: ${{ secrets.VAULT_TOKEN }}
+  VAULT_HOST: ${{ secrets.VAULT_HOST }}
 
 jobs:
   # Сборка и пуш образов в докерхаб:
