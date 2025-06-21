@@ -24,7 +24,7 @@ spec:
         ports:
         - containerPort: {{ .Values.mongodb.containerPort }}
         resources:
-          {{- toYaml .Values.postgresql.resources | nindent 10 }}
+          {{- toYaml .Values.mongodb.resources | nindent 10 }}
         volumeMounts:
         - name: mongodb-data
           mountPath: /data/db
@@ -58,3 +58,80 @@ metadata:
 data:
   MONGO_INITDB_ROOT_USERNAME: {{ .Values.mongodb.env.MONGO_INITDB_ROOT_USERNAME }}
   MONGO_INITDB_ROOT_PASSWORD: {{ .Values.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mongodb-reports-secret
+type: Opaque
+data:
+  DB_URI: {{ printf "mongodb://%s:%s@mongodb:%d/%s" .Values.mongodb.reportsDb.user .Values.mongodb.reportsDb.password (.Values.mongodb.containerPort | int) .Values.mongodb.reportsDb.name | b64enc }}
+  DB_USER: {{ .Values.mongodb.reportsDb.user | b64enc }}
+  DB_PASSWORD: {{ .Values.mongodb.reportsDb.password | b64enc }}
+  DB_NAME: {{ .Values.mongodb.reportsDb.name | b64enc }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mongodb-init-job
+  annotations:
+    helm.sh/hook: post-install,post-upgrade
+    helm.sh/hook-weight: "1"
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: mongodb-init
+        image: mongo:7.0
+        command:
+        - /bin/bash
+        - -c
+        - |
+          # Ждем пока MongoDB станет доступен
+          until mongosh --host mongodb:{{ .Values.mongodb.containerPort }} \
+            --username {{ .Values.mongodb.env.MONGO_INITDB_ROOT_USERNAME }} \
+            --password {{ .Values.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }} \
+            --authenticationDatabase admin \
+            --eval "print('MongoDB is ready')" > /dev/null 2>&1; do
+            echo "Waiting for MongoDB to be ready..."
+            sleep 5
+          done
+          
+          # Создаем базу данных для отчетов и пользователя
+          mongosh --host mongodb:{{ .Values.mongodb.containerPort }} \
+            --username {{ .Values.mongodb.env.MONGO_INITDB_ROOT_USERNAME }} \
+            --password {{ .Values.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }} \
+            --authenticationDatabase admin <<EOF
+          
+          // Переключаемся на базу данных для отчетов
+          use {{ .Values.mongodb.reportsDb.name }};
+          
+          // Создаем пользователя для отчетов
+          db.createUser({
+            user: "{{ .Values.mongodb.reportsDb.user }}",
+            pwd: "{{ .Values.mongodb.reportsDb.password }}",
+            roles: [
+              {
+                role: "readWrite",
+                db: "{{ .Values.mongodb.reportsDb.name }}"
+              }
+            ]
+          });
+          
+          // Создаем тестовую коллекцию для проверки
+          db.reports.insertOne({
+            created_at: new Date(),
+            message: "Database and user created successfully"
+          });
+          
+          print("Database '{{ .Values.mongodb.reportsDb.name }}' and user '{{ .Values.mongodb.reportsDb.user }}' created successfully");
+          EOF
+        env:
+        - name: MONGO_INITDB_ROOT_USERNAME
+          value: {{ .Values.mongodb.env.MONGO_INITDB_ROOT_USERNAME }}
+        - name: MONGO_INITDB_ROOT_PASSWORD
+          value: {{ .Values.mongodb.env.MONGO_INITDB_ROOT_PASSWORD }}
+        resources:
+          {{- toYaml .Values.mongodb.resources | nindent 10 }}

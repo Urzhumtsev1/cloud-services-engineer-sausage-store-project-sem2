@@ -90,6 +90,7 @@ infra:
     env:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: sausage-store
     containerPort: 27017
     resources:
       requests:
@@ -97,3 +98,8 @@ infra:
         cpu: "50m"
       limits:
         memory: "256Mi"
+    # Настройки для базы данных отчетов
+    reportsDb:
+      name: sausage-reports
+      user: reports-user
+      password: reports-password
