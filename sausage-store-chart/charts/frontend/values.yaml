@@ -14,7 +14,7 @@ containerPort: 80
 image: urzhumtsev/sausage-frontend:latest
 resources:
   requests:
-    memory: "128Mi"
+    memory: "64Mi"
     cpu: "100m"
   limits:
     memory: "128Mi"
