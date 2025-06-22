@@ -30,6 +30,6 @@ mongodb:
       cpu: "200m"
   # Настройки для базы данных отчетов
   reportsDb:
-    name: sausage-reports
-    user: reports-user
-    password: reports-password
+    name: sausage-store
+    user: root
+    password: rootpassword
