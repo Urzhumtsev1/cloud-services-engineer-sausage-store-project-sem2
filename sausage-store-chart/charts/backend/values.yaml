@@ -1,5 +1,9 @@
 global:
   imagePullPolicy: Always
+  vault:
+    host: ip
+    name: sausage-store
+    vaultToken: someToken
 annotations:
   path: /actuator/prometheus
   port: "8080"
