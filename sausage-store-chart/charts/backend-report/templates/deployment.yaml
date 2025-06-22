@@ -42,6 +42,8 @@ spec:
           envFrom:
             - secretRef:
                 name: {{ include "backend-report.fullname" . }}
+            - configMapRef:
+                name: {{ include "backend-report.fullname" . }}-conf
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: http
