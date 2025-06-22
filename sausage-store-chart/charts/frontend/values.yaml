@@ -7,7 +7,7 @@ strategy:
 service:
   port: 80
 ingress:
-  host: front-urzhumtsev.students-projects.ru
+  host: front-urzhumtsev.2sem.students-projects.ru
   path: /
   pathType: Prefix
 containerPort: 80
