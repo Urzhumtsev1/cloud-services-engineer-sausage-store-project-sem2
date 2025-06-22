@@ -2,7 +2,7 @@ global:
   imagePullPolicy: Always
   vault:
     host: ip
-    name: sausage-store
+    name: vault
     vaultToken: someToken
 annotations:
   path: /actuator/prometheus
