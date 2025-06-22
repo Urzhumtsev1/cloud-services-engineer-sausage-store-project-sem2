@@ -53,6 +53,8 @@ livenessProbe:
     initialDelaySeconds: 15
     periodSeconds: 10
 
+readinessProbe: {}
+
 autoscaling:
   enabled: true
   minReplicas: 1
