@@ -34,7 +34,7 @@ service:
 resources:
   limits:
     cpu: 250m
-    memory: 512Mi
+    memory: 256Mi
   requests:
     cpu: 100m
     memory: 128Mi
@@ -51,7 +51,7 @@ readinessProbe: {}
 autoscaling:
   enabled: true
   minReplicas: 1
-  maxReplicas: 5
+  maxReplicas: 2
   targetCPUUtilizationPercentage: 80
 
 volumes: []
