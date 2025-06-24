@@ -4,3 +4,179 @@ global:
     host: ip
     name: vault
     vaultToken: someToken
+
+infra:
+  postgresql:
+    image: postgres:15.1-alpine3.16
+    storage: 1Gi
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "100m"
+      limits:
+        memory: "256Mi"
+        cpu: "500m"
+    env:
+      POSTGRES_DB: sausage-store
+      POSTGRES_USER: store
+      POSTGRES_PASSWORD: storepassword
+    containerPort: 5432
+  mongodb:
+    image: mongo:7.0
+    storage: 1Gi
+    env:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: rootpassword
+      MONGO_INITDB_DATABASE: sausage-store
+    containerPort: 27017
+    resources:
+      requests:
+        memory: "128Mi"
+        cpu: "50m"
+      limits:
+        memory: "256Mi"
+        cpu: "200m"
+    reportsDb:
+      name: sausage-store
+      user: root
+      password: rootpassword
+
+frontend:
+  replicas: 1
+  revisionHistoryLimit: 15
+  strategy:
+    type: Recreate
+  service:
+    port: 80
+  ingress:
+    host: front-urzhumtsev.2sem.students-projects.ru
+    path: /
+    pathType: Prefix
+  containerPort: 80
+  image: urzhumtsev/sausage-frontend:latest
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "100m"
+    limits:
+      memory: "128Mi"
+      cpu: "1"
+  nginxConf: nginx.conf
+
+backend-report:
+  replicaCount: 1
+
+  DB: "mongodb://root:rootpassword@mongodb:27017/sausage-store"
+
+  image:
+    repository: urzhumtsev/sausage-backend-report
+    pullPolicy: IfNotPresent
+    tag: "latest"
+
+  strategy:
+    type: Recreate
+
+  imagePullSecrets: []
+  nameOverride: ""
+  fullnameOverride: ""
+
+  serviceAccount:
+    create: true
+    automount: true
+    annotations: {}
+    name: ""
+  podAnnotations: {}
+  podLabels: {}
+
+  podSecurityContext: {}
+
+  securityContext: {}
+
+  service:
+    type: ClusterIP
+    port: 8080
+
+  resources:
+    limits:
+      cpu: 250m
+      memory: 128Mi
+    requests:
+      cpu: 100m
+      memory: 64Mi
+
+  livenessProbe:
+      httpGet:
+        path: /api/v1/health
+        port: 8080
+      initialDelaySeconds: 15
+      periodSeconds: 10
+
+  readinessProbe: {}
+
+  autoscaling:
+    enabled: true
+    minReplicas: 1
+    maxReplicas: 2
+    targetCPUUtilizationPercentage: 80
+
+  volumes: []
+
+  volumeMounts: []
+
+  nodeSelector: {}
+
+  tolerations: []
+
+  affinity: {}
+  
+backend:
+  annotations:
+    path: /actuator/prometheus
+    port: "8080"
+    scrape: "true"
+  env:
+    postgresUri: jdbc:postgresql://postgres:5432/sausage-store
+    postgresUser: store
+    postgresPassword: storepassword
+    reportPath: /logs/reports
+    logPath: /logs
+  service:
+    port: 8080
+  revisionHistoryLimit: 15
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 2
+  image: urzhumtsev/sausage-backend:latest
+  imagePullPolicy: Always
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+  containerPort: 8080
+  livenessProbe:
+    httpGet:
+      path: /actuator/health
+      port: 8080
+    initialDelaySeconds: 60
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 30
+  vpa:
+    updatePolicy:
+      updateMode: "Auto"
+    resourcePolicy:
+      containerPolicies:
+        - containerName: "*"
+          minAllowed:
+            cpu: "240m"
+            memory: "0Mi"
+          maxAllowed:
+            cpu: "240m"
+            memory: "500Mi"
+          controlledResources: ["cpu", "memory"]
